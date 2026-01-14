@@ -1,0 +1,145 @@
+<mat-toolbar class="toolbar">
+  <div class="title">Org Chart (Angular)</div>
+
+  <span class="spacer"></span>
+
+  <button mat-stroked-button (click)="openCreatePosition()">
+    <mat-icon>add</mat-icon>
+    Positions
+  </button>
+
+  <button mat-stroked-button (click)="addLevel()">
+  <mat-icon>add</mat-icon>
+  Add Level
+</button>
+
+</mat-toolbar>
+
+
+  <div class="layout" cdkDropListGroup *ngIf="(state$ | async) as s">
+
+  <section class="palette">
+    <div class="panel-title">Positions</div>
+
+ 
+      <div class="palette-list"
+     cdkDropList
+     #paletteList="cdkDropList"
+     [cdkDropListData]="s.positions"
+     [cdkDropListEnterPredicate]="denyDropToPalette">
+
+      <div class="pos"
+           *ngFor="let p of s.positions"
+           cdkDrag
+           [cdkDragData]="templateDragData(p)"
+           [ngClass]="'sec-' + (p.section || 'Other')">
+        <div class="pos-name">{{ p.name }}</div>
+        <div class="pos-sec">{{ p.section }}</div>
+      </div>
+
+      <div class="empty" *ngIf="!s.positions.length">
+        Create positions first by clicking “Positions”
+      </div>
+    </div>
+  </section>
+
+
+<section class="board">
+  <div class="board-scroll" #boardScroll>
+
+  
+    <svg class="link-layer"
+         [attr.width]="svgW"
+         [attr.height]="svgH">
+      <defs>
+    
+        <marker id="arrow"
+        markerWidth="9" markerHeight="9"
+        refX="7" refY="3.5"
+        orient="auto"
+        markerUnits="strokeWidth">
+  <path d="M0,0 L7,3.5 L0,7 Z" fill="context-stroke"></path>
+</marker>
+
+      </defs>
+
+      <path *ngFor="let l of links"
+      [attr.d]="l.d"
+      [attr.stroke]="l.color"
+      stroke-width="3"
+      fill="none"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      marker-end="url(#arrow)">
+</path>
+
+    </svg>
+
+
+    <div class="level"
+         *ngFor="let levelIds of s.levels; let i = index"
+         cdkDropList
+         [cdkDropListData]="levelIds"
+         [cdkDropListConnectedTo]="[paletteList]"
+         (cdkDropListDropped)="dropToLevel($event, i + 1)">
+
+      <div class="level-head">Level {{ i + 1 }}</div>
+
+      <div class="level-body">
+
+        <div #nodeEl
+             class="node"
+             [attr.data-id]="id"
+             *ngFor="let id of levelIds; trackBy: trackById"
+             cdkDrag
+             [cdkDragData]="nodeDragData(id)"
+             (mouseenter)="setHover(id)"
+             (mouseleave)="setHover(null)"
+             [class.hover]="hoveredId === id"
+             [class.ancestor]="isAncestor(id)"
+             [class.descendant]="isDescendant(id)"
+             [ngClass]="'sec-' + (s.nodes[id]?.section || 'Other')">
+
+          <div class="node-top">
+            <div class="node-title">{{ s.nodes[id]?.name }}</div>
+
+            <button mat-icon-button class="del"
+                    (click)="askDelete(s.nodes[id])"
+                    aria-label="delete">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="node-sub">{{ s.nodes[id]?.section }}</div>
+
+          <div class="rel" *ngIf="hoveredId === id">
+            <div><b>Parent:</b> {{ parentLabel(s.nodes[id], s.nodes) }}</div>
+            <div><b>Children:</b> {{ childrenCount(id) }}</div>
+            <div class="hint">(Ancestors/descendants highlighted)</div>
+          </div>
+        </div>
+
+        <div class="drop-hint" *ngIf="!levelIds.length">
+          Drop here
+        </div>
+      </div>
+    </div>
+
+
+    <div class="level add-level">
+      <div class="level-head">New Level</div>
+      <div class="level-body">
+        <button mat-flat-button color="primary" (click)="addLevel()">
+          <mat-icon>add</mat-icon>
+          Add Level
+        </button>
+        <div class="note">
+          (You can add unlimited levels. Dropping into Level &gt; 1 still requires previous level not empty.)
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</div>
